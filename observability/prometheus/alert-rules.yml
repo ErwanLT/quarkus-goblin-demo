@@ -1,0 +1,41 @@
+# Les règles d'alerte de la taverne, visibles dans http://localhost:9090/alerts
+groups:
+  - name: the-falling-whale
+    rules:
+      - alert: TavernApiDown
+        expr: up{job="the-falling-whale"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "La taverne ne répond plus"
+          description: "Le scrape Prometheus vers l'application Quarkus échoue depuis 30 secondes."
+
+      - alert: TavernOrderLatencyP95High
+        expr: histogram_quantile(0.95, sum by (le) (rate(tavern_order_seconds_bucket[1m]))) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Les commandes sont servies trop lentement"
+          description: "La latence p95 des commandes dépasse 500 ms depuis 1 minute."
+
+      - alert: TavernErrorRateHigh
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="the-falling-whale", outcome="SERVER_ERROR"}[1m]))
+            / sum(rate(http_server_requests_seconds_count{job="the-falling-whale", uri!~"/q/.*"}[1m])) > 0.05
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Plus de 5 % d'erreurs serveur"
+          description: "Plus de 5 % des requêtes finissent en erreur 5xx depuis 1 minute."
+
+      - alert: GoblinChaosActive
+        expr: goblin_active == 1
+        for: 0s
+        labels:
+          severity: info
+        annotations:
+          summary: "Un gobelin rôde dans la taverne"
+          description: "Quarkus Goblin est actif : des pannes sont injectées volontairement."

@@ -1,0 +1,100 @@
+# La tour de guet de The Falling Whale.
+#
+# L'application tourne en dev mode sur la machine (./mvnw quarkus:dev) : c'est le seul mode où Quarkus Goblin est
+# actif. Ce compose fournit tout le reste :
+#
+#   - postgres        la cave (base de données de l'application)              localhost:5432
+#   - otel-collector  reçoit les traces et les logs OTLP de l'application      localhost:4317 (gRPC), 4318 (HTTP)
+#   - tempo           stocke les traces et en dérive le graphe de services     (interne)
+#   - loki            stocke les logs, reliés aux traces par leur traceId       (interne)
+#   - prometheus      scrape /q/metrics et évalue les règles d'alerte          http://localhost:9090
+#   - grafana         dashboards, traces (Tempo) et logs (Loki)                http://localhost:3000
+#
+# Démarrage : docker compose up -d
+
+name: the-falling-whale
+
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: falling_whale
+      POSTGRES_USER: tavernier
+      POSTGRES_PASSWORD: hydromel
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tavernier -d falling_whale"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.128.0
+    command: ["--config=/etc/otel-collector/config.yaml"]
+    volumes:
+      - ./observability/otel-collector/config.yaml:/etc/otel-collector/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - tempo
+      - loki
+
+  loki:
+    image: grafana/loki:3.5.3
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./observability/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      # stockage en mémoire, accessible en écriture à l'utilisateur non root de l'image
+      - type: tmpfs
+        target: /loki
+        tmpfs:
+          mode: 01777
+
+  tempo:
+    image: grafana/tempo:2.8.1
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      # stockage en mémoire, accessible en écriture à l'utilisateur non root de l'image
+      - type: tmpfs
+        target: /var/tempo
+        tmpfs:
+          mode: 01777
+    depends_on:
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus:v3.4.2
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --storage.tsdb.retention.time=2d
+    volumes:
+      - ./observability/prometheus:/etc/prometheus:ro
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      # l'application tourne sur la machine hôte (nécessaire sous Linux, natif avec Docker Desktop)
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:12.0.2
+    environment:
+      # démo locale : accès anonyme administrateur, pas d'écran de connexion
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/the-falling-whale.json
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
