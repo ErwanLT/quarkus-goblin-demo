@@ -16,6 +16,8 @@ que `@Retry`, `@Fallback`, `@Timeout` et `@CircuitBreaker` tiennent vraiment.
 L'application reprend les briques présentées dans la série d'articles *The Falling Whale* sur
 [sfeir.dev](https://www.sfeir.dev/author/erwan/) (voir [Pour aller plus loin](#pour-aller-plus-loin)).
 
+![La salle de la taverne pendant le service ordinaire](docs/images/00a-salle-service-ordinaire.jpg)
+
 ## Ce qu'il y a dans la taverne
 
 | Brique | Détails |
@@ -181,7 +183,7 @@ salle (http://localhost:8080/salle) montre ce que vivent les clients, en direct 
 
 | Panneau | Ce qu'il montre |
 |---|---|
-| **Le gobelin** | où il frappe (la cave, les cuisines, la porte d'entrée…), comment, et sur quelle part des requêtes |
+| **Le gobelin** | s'il rôde, ce qu'il injecte, et sur quelle part des requêtes |
 | **Les compteurs** | commandes servies, refusées (4xx) et perdues (5xx), temps de service moyen |
 | **Le comptoir** | chaque commande avec son aventurier, sa recette et son temps : verte si servie, orange si refusée, rouge si abandonnée (`@Timeout`) ou perdue |
 | **La carte du jour** | se transforme en ardoise à la craie quand le grimoire sert sa dernière carte connue (`@Fallback`) |
@@ -195,6 +197,10 @@ La salle observe l'application, elle ne simule rien : les services publient des 
 réapprovisionnement), un filtre JAX-RS regarde les commandes sortir du comptoir (y compris les `504`, qui ne sortent
 jamais du service), et une ressource `/salle` les pousse en SSE. Elle est exclue du ciblage Goblin, des métriques HTTP
 et des traces, pour que l'écran de démo reste lisible et ne fausse pas les dashboards.
+
+La page elle-même ne lit jamais la base : la carte et les bourses sont chargées au démarrage, puis tenues à jour
+par les commandes servies. Goblin 0.3.0 attaque aussi les appels faits depuis une requête exclue du ciblage : sans
+ça, la salle tomberait en `500` pendant une panne de la cave.
 
 ## La tour de guet
 
@@ -224,10 +230,20 @@ et des traces, pour que l'écran de démo reste lisible et ne fausse pas les das
   - `TavernErrorRateHigh` ;
   - `GoblinChaosActive`.
 
+![Le dashboard de la taverne, en service ordinaire](docs/images/02-grafana-taverne-nominal.jpg)
+
+![Le dashboard Quarkus Goblin pendant une panne de la cave : assauts par couche et replis servis](docs/images/08-grafana-goblin-cave.jpg)
+
+![Une trace dans Tempo : la cave tombe, deux nouvelles tentatives, puis l'ardoise](docs/images/07-trace-ardoise.jpg)
+
+![Le carnet du gobelin dans Loki : chaque panne injectée, avec sa trace](docs/images/11-carnet-du-gobelin.jpg)
+
 ## Le gobelin passe à l'attaque
 
 Au démarrage, le gobelin ajoute déjà 50 à 400 ms de latence sur 25 % des requêtes REST entrantes (voir
 `application.properties`). Tout le reste se pilote dans la **Dev UI > Goblin > Chaos Dashboard**.
+
+![Le Chaos Dashboard de Goblin dans la Dev UI](docs/images/01-dev-ui-demarrage.jpg)
 
 Lancez `./scripts/trafic.sh` dans un terminal, gardez les deux dashboards Grafana ouverts, puis essayez :
 
@@ -239,6 +255,21 @@ Lancez `./scripts/trafic.sh` dans un terminal, gardez les deux dashboards Grafan
 | 4 | Couche **Outbound HTTP** seule, **client exception** | La guilde des marchands ne répond plus : deux nouvelles tentatives, puis `MARCHAND_ABSENT` ; après quelques échecs, le `@CircuitBreaker` s'ouvre et n'envoie plus de coursier pendant 10 s : le repli est alors immédiat (`@Retry(abortOn = CircuitBreakerOpenException.class)`) | La lanterne de la porte de derrière passe au rouge, les chariots n'arrivent plus ; assauts `rest-client`, *Disjoncteur de la guilde des marchands* |
 | 5 | Couche **Inbound REST**, **HTTP Status** `503` à `30` % | Des `503` aléatoires, la courbe d'erreurs monte, `TavernErrorRateHigh` se déclenche | *Réponses par statut* |
 | 6 | **Auto-off** 5 min, puis fermez la Dev UI | Le gobelin s'arrête tout seul à l'échéance | Stat *Chaos* |
+
+Ce que la salle en montre :
+
+**Scénario 2, la cuisine traîne** : les commandes sont abandonnées à 1,5 s, les bourses ne bougent pas.
+
+![La salle pendant que la cuisine traîne](docs/images/00b-salle-cuisine-lente.jpg)
+
+**Scénario 3, la cave tombe** : la carte est servie depuis l'ardoise, les commandes sont perdues.
+
+![La salle pendant la panne de la cave](docs/images/00c-salle-cave-en-panne.jpg)
+
+**Scénario 4, le marchand ne vient plus** : le disjoncteur s'ouvre, les livraisons manquent, et les ruptures de
+stock finissent par arriver au comptoir.
+
+![La salle quand le marchand ne vient plus](docs/images/00d-salle-marchand-absent.jpg)
 
 `Disable all`, ou `Ctrl`/`Cmd` + `Shift` + `X` dans le Chaos Dashboard, coupe tout immédiatement.
 

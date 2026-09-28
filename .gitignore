@@ -37,3 +37,6 @@ target/
 /mvnw
 /mvnw.cmd
 /.mvn/
+
+# macOS
+.DS_Store

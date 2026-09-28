@@ -14,8 +14,6 @@ import org.jboss.resteasy.reactive.RestStreamElementType;
 
 import fr.eletutour.tavern.dto.AdventurerDTO;
 import fr.eletutour.tavern.dto.RecipeDTO;
-import fr.eletutour.tavern.service.AdventurerService;
-import fr.eletutour.tavern.service.GrimoireService;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import io.smallrye.mutiny.Multi;
@@ -27,12 +25,6 @@ import io.smallrye.mutiny.Multi;
 @Path("/salle")
 @Tag(name = "Salle", description = "L'écran de démo : ce que vivent les clients de la taverne, en direct")
 public class SalleResource {
-
-    @Inject
-    GrimoireService grimoireService;
-
-    @Inject
-    AdventurerService adventurerService;
 
     @Inject
     SalleService salle;
@@ -50,7 +42,8 @@ public class SalleResource {
     @Produces(MediaType.TEXT_HTML)
     @Operation(summary = "La salle", description = "Page de démo : comptoir, carte du jour, porte de derrière et bourses.")
     public TemplateInstance page() {
-        return Templates.salle(grimoireService.consulterLeGrimoire(), adventurerService.consulterLeRegistre());
+        // aucune lecture en base ici : la page doit s'afficher même pendant une panne de la cave
+        return Templates.salle(salle.carteDuJour(), salle.bourses());
     }
 
     @GET

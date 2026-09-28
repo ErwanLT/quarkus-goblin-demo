@@ -146,9 +146,8 @@
       $('gobelin-detail').textContent = 'Aucune panne injectée.';
       return;
     }
-    const lieux = g.couches.join(', ');
     const assauts = g.assauts.length ? g.assauts.join(', ') : 'rien pour l\'instant';
-    $('gobelin-titre').textContent = `Le gobelin rôde : ${lieux}`;
+    $('gobelin-titre').textContent = 'Le gobelin rôde';
     $('gobelin-detail').textContent = `${assauts} · ${g.niveau} % des requêtes · ${g.total} assauts ce soir`;
   }
 
