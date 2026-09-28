@@ -79,12 +79,13 @@ public class InitialData {
         recette(reserve, "Élixir du Phénix", "Ramène un aventurier d'entre les presque-morts. Stock très limité.", 320,
                 "Queue de Phénix", "Eau de source elfique");
 
-        List.of(new Adventurer("Arthas", AdventurerClass.GUERRIER, 500),
-                new Adventurer("Lyra", AdventurerClass.BARDE, 120),
-                new Adventurer("Morgana", AdventurerClass.MAGE, 1500),
+        // des bourses bien garnies, pour tenir une soirée de démo ; Bilbon, lui, n'a jamais un sou (le refus métier)
+        List.of(new Adventurer("Arthas", AdventurerClass.GUERRIER, 6_000),
+                new Adventurer("Lyra", AdventurerClass.BARDE, 3_000),
+                new Adventurer("Morgana", AdventurerClass.MAGE, 15_000),
                 new Adventurer("Bilbon", AdventurerClass.VOLEUR, 25),
-                new Adventurer("Frère Tuck", AdventurerClass.CLERC, 200),
-                new Adventurer("Aragorn", AdventurerClass.RODEUR, 350))
+                new Adventurer("Frère Tuck", AdventurerClass.CLERC, 4_000),
+                new Adventurer("Aragorn", AdventurerClass.RODEUR, 8_000))
                 .forEach(adventurerRepository::persist);
 
         LOG.infof("La taverne ouvre : %d ingrédients, %d recettes, %d aventuriers", ingredientRepository.count(),

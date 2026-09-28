@@ -1,0 +1,167 @@
+/* La salle de The Falling Whale : un écran à projeter, lisible du fond de la salle. */
+:root {
+  color-scheme: dark;
+  --bois: #16120d;
+  --planche: #211a13;
+  --planche-claire: #2c2319;
+  --trait: #3d3124;
+  --texte: #f3e9d8;
+  --texte-doux: #b9a88f;
+  --laiton: #e0aa48;
+  --vert: #7fcb7a;
+  --orange: #efa94a;
+  --rouge: #ec6a5c;
+  --craie: #e9ecef;
+  --ardoise: #2f3a3f;
+  --titre: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --corps: -apple-system, "Segoe UI", system-ui, sans-serif;
+  --chiffres: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at top, #2a2016 0%, var(--bois) 60%);
+  color: var(--texte);
+  font: 18px/1.45 var(--corps);
+  display: flex;
+  flex-direction: column;
+  padding-inline: 24px;
+}
+a { color: var(--laiton); }
+
+/* ------------------------------------------------ enseigne */
+.enseigne {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  padding-block: 18px 16px;
+  border-bottom: 1px solid var(--trait);
+}
+.surtitre { margin: 0; font: 600 13px/1 var(--corps); letter-spacing: .18em; text-transform: uppercase; color: var(--laiton); }
+h1 { margin: 4px 0 0; font: 700 42px/1 var(--titre); }
+
+.gobelin {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 18px; border-radius: 14px;
+  background: var(--planche); border: 1px solid var(--trait);
+}
+.gobelin-oeil { width: 22px; height: 22px; border-radius: 50%; background: #55624f; flex: none; }
+.gobelin-titre { margin: 0; font: 700 22px/1.2 var(--titre); }
+.gobelin-detail { margin: 2px 0 0; color: var(--texte-doux); font-size: 16px; }
+.gobelin-lien { margin-left: auto; font-size: 15px; white-space: nowrap; }
+.gobelin.rode { border-color: var(--orange); background: linear-gradient(90deg, #3a2410, var(--planche)); }
+.gobelin.rode .gobelin-oeil { background: var(--orange); box-shadow: 0 0 18px var(--orange); }
+
+.compteurs { display: flex; gap: 12px; margin: 0; }
+.compteur { min-width: 112px; padding: 8px 14px; border-radius: 12px; background: var(--planche); border: 1px solid var(--trait); }
+.compteur dt { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--texte-doux); }
+.compteur dd { margin: 0; font: 700 34px/1.1 var(--chiffres); font-variant-numeric: tabular-nums; }
+.compteur dd small { font-size: 16px; color: var(--texte-doux); }
+.servies dd { color: var(--vert); }
+.refusees dd { color: var(--orange); }
+.perdues dd { color: var(--rouge); }
+
+/* ------------------------------------------------ salle */
+.salle {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, .8fr);
+  gap: 18px;
+  padding-block: 18px;
+  min-height: 0;
+}
+.colonne { display: grid; grid-template-rows: auto 1fr; gap: 18px; min-height: 0; }
+.panneau {
+  background: var(--planche);
+  border: 1px solid var(--trait);
+  border-radius: 16px;
+  padding: 16px 18px;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+h2 { margin: 0; font: 700 26px/1.2 var(--titre); color: var(--laiton); }
+.aide { margin: 2px 0 12px; color: var(--texte-doux); font-size: 15px; }
+.vide { color: var(--texte-doux); font-style: italic; list-style: none; }
+
+/* le comptoir */
+.commandes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; overflow: hidden; }
+.commande {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--planche-claire);
+  border-left: 6px solid var(--vert);
+}
+.commande .heure { font: 400 15px var(--chiffres); color: var(--texte-doux); }
+.commande .quoi { min-width: 0; }
+.commande .qui { font-weight: 700; }
+.commande .detail { display: block; color: var(--texte-doux); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.commande .duree { font: 600 17px var(--chiffres); font-variant-numeric: tabular-nums; text-align: right; }
+.commande .etiquette { font: 700 13px/1 var(--corps); letter-spacing: .06em; text-transform: uppercase; padding: 6px 9px; border-radius: 999px; background: #20331f; color: var(--vert); }
+.commande.refusee, .commande.refoulee { border-left-color: var(--orange); }
+.commande.refusee .etiquette, .commande.refoulee .etiquette { background: #3a2a12; color: var(--orange); }
+.commande.abandonnee, .commande.perdue { border-left-color: var(--rouge); background: #34201b; }
+.commande.abandonnee .etiquette, .commande.perdue .etiquette { background: #4a1f1a; color: var(--rouge); }
+.commande.lente .duree { color: var(--orange); }
+
+/* la carte */
+.bandeau { margin: 10px 0 12px; padding: 10px 12px; border-radius: 10px; background: #20331f; color: var(--vert); font-weight: 600; }
+.recettes { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.recettes li { display: flex; justify-content: space-between; gap: 12px; font-size: 19px; padding: 4px 0; border-bottom: 1px dashed var(--trait); }
+.recette-prix { font: 600 17px var(--chiffres); color: var(--laiton); }
+.carte.ardoise { background: var(--ardoise); border-color: #56666d; }
+.carte.ardoise h2 { color: var(--craie); }
+.carte.ardoise .bandeau { background: #473516; color: var(--orange); }
+.carte.ardoise .recettes li { font-family: "Chalkboard SE", "Comic Sans MS", var(--titre); color: var(--craie); border-bottom-color: #56666d; }
+.carte.ardoise .recette-prix { color: var(--craie); }
+
+/* la porte de derrière */
+.disjoncteur { display: flex; gap: 14px; align-items: center; margin: 10px 0 12px; }
+.lanterne { width: 34px; height: 34px; border-radius: 50%; flex: none; background: var(--vert); box-shadow: 0 0 22px var(--vert); }
+.disjoncteur[data-etat="OPEN"] .lanterne { background: var(--rouge); box-shadow: 0 0 26px var(--rouge); }
+.disjoncteur[data-etat="HALF_OPEN"] .lanterne { background: var(--orange); box-shadow: 0 0 22px var(--orange); }
+.disjoncteur-titre { margin: 0; font: 700 20px/1.2 var(--titre); }
+.disjoncteur-detail { margin: 2px 0 0; color: var(--texte-doux); font-size: 15px; }
+.livraisons { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; overflow: hidden; }
+.livraison { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 10px; font-size: 16px; }
+.livraison .heure { font: 400 15px var(--chiffres); color: var(--texte-doux); }
+.livraison.absent { color: var(--orange); }
+
+/* les bourses */
+.aventuriers { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; overflow: hidden; }
+.aventurier { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 12px; border-radius: 10px; background: var(--planche-claire); transition: background-color .6s; }
+.aventurier-tete { display: flex; flex-direction: column; min-width: 0; }
+.aventurier-nom { font: 700 19px/1.2 var(--titre); }
+.aventurier-classe { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--texte-doux); }
+.aventurier-or { font: 700 22px/1.2 var(--chiffres); color: var(--laiton); font-variant-numeric: tabular-nums; text-align: right; align-self: center; }
+.jauge { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: #3a2f22; overflow: hidden; }
+.jauge span { display: block; height: 100%; width: 100%; background: var(--laiton); transition: width .6s; }
+.aventurier-derniere { grid-column: 1 / -1; margin: 2px 0 0; font-size: 13px; color: var(--texte-doux); min-height: 1.3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aventurier.paye { background: #2d3a24; }
+.aventurier.epargne { background: #43241f; }
+
+/* ------------------------------------------------ pied */
+.pied { display: flex; justify-content: space-between; gap: 16px; padding-block: 8px 14px; color: var(--texte-doux); font-size: 14px; border-top: 1px solid var(--trait); }
+.connexion::before { content: "●"; margin-right: 6px; color: var(--orange); }
+.connexion.ok::before { color: var(--vert); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .commande, .livraison { animation: entree .35s ease-out; }
+  .gobelin.rode .gobelin-oeil { animation: rode 1.6s ease-in-out infinite; }
+  @keyframes entree { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  @keyframes rode { 50% { opacity: .45; } }
+}
+
+@media (max-width: 1100px) {
+  .enseigne { grid-template-columns: 1fr; }
+  .compteurs { flex-wrap: wrap; }
+  .salle { grid-template-columns: 1fr; }
+}

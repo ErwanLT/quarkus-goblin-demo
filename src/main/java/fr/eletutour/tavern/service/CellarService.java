@@ -7,6 +7,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
@@ -19,6 +20,7 @@ import fr.eletutour.tavern.domain.Stock;
 import fr.eletutour.tavern.dto.DtoMapper;
 import fr.eletutour.tavern.dto.RestockDTO;
 import fr.eletutour.tavern.dto.StockDTO;
+import fr.eletutour.tavern.event.Reapprovisionnement;
 import fr.eletutour.tavern.exception.business.TavernError;
 import fr.eletutour.tavern.exception.business.TavernException;
 import fr.eletutour.tavern.repository.StockRepository;
@@ -38,6 +40,9 @@ public class CellarService {
 
     @Inject
     MerchantService merchantService;
+
+    @Inject
+    Event<Reapprovisionnement> reapprovisionnement;
 
     public List<StockDTO> inventaire() {
         return stockRepository.listAllWithIngredient().stream().map(DtoMapper::toDto).toList();
@@ -83,16 +88,25 @@ public class CellarService {
         Delivery delivery = merchantService.commander(stock.ingredient.name, quantity);
         stock.quantity += delivery.quantity();
         boolean delivered = delivery.carrier() != null;
+        reapprovisionnement.fire(new Reapprovisionnement(stock.ingredient.name, delivery.quantity(), delivery.carrier(),
+                stock.quantity));
         if (delivered) {
-            LOG.infof("Réapprovisionnement : %d %s livré(s) par %s, étagère à %d", (Object) delivery.quantity(),
-                    stock.ingredient.name, delivery.carrier(), stock.quantity);
+            LOG.infof("Réapprovisionnement : %d %s livré(s) par le chariot %s, étagère à %d", (Object) delivery.quantity(),
+                    stock.ingredient.name, de(delivery.carrier()), stock.quantity);
         } else {
             LOG.warnf("Réapprovisionnement manqué : la guilde n'a pas livré %s, étagère toujours à %d",
                     stock.ingredient.name, stock.quantity);
         }
         return new RestockDTO(DtoMapper.toDto(stock), delivery.quantity(), delivered ? "LIVRE" : "MARCHAND_ABSENT",
-                delivered ? "Livré par le chariot de " + delivery.carrier()
+                delivered ? "Livré par le chariot " + de(delivery.carrier())
                         : "La guilde des marchands n'a pas répondu, réessayez plus tard.");
+    }
+
+    /** « d'Elwen », « de Borin ». */
+    static String de(String nom) {
+        return nom != null && !nom.isEmpty() && "aeiouyéèêàâîïôœhAEIOUYÉÈÊÀÂÎÏÔŒH".indexOf(nom.charAt(0)) >= 0
+                ? "d'" + nom
+                : "de " + nom;
     }
 
     private Stock charger(Long ingredientId) {

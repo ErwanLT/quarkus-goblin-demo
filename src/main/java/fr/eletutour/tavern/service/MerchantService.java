@@ -14,6 +14,7 @@ import org.jboss.logging.Logger;
 import fr.eletutour.tavern.client.Delivery;
 import fr.eletutour.tavern.client.DeliveryRequest;
 import fr.eletutour.tavern.client.MerchantGuildClient;
+import io.smallrye.faulttolerance.api.CircuitBreakerName;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 
@@ -27,6 +28,9 @@ public class MerchantService {
 
     private static final Logger LOG = Logger.getLogger(MerchantService.class);
 
+    /** Nom du disjoncteur de la guilde, pour suivre son état depuis la salle. */
+    public static final String DISJONCTEUR = "guilde-des-marchands";
+
     @Inject
     @RestClient
     MerchantGuildClient merchantGuild;
@@ -35,6 +39,7 @@ public class MerchantService {
     // un disjoncteur ouvert répond tout de suite : inutile de réessayer, on passe directement au repli
     @Retry(maxRetries = 2, delay = 200, abortOn = CircuitBreakerOpenException.class)
     @CircuitBreaker(requestVolumeThreshold = 6, failureRatio = 0.5, delay = 10_000)
+    @CircuitBreakerName(MerchantService.DISJONCTEUR)
     @Fallback(fallbackMethod = "marchandAbsent")
     @WithSpan("commander-a-la-guilde")
     public Delivery commander(@SpanAttribute("tavern.ingredient") String ingredient,

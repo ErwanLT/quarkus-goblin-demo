@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La salle · The Falling Whale</title>
+  <link rel="stylesheet" href="/assets/salle.css">
+</head>
+<body>
+  <header class="enseigne">
+    <div class="titre">
+      <p class="surtitre">The Falling Whale</p>
+      <h1>La salle</h1>
+    </div>
+
+    <section class="gobelin" id="gobelin" aria-live="polite">
+      <span class="gobelin-oeil" aria-hidden="true"></span>
+      <div>
+        <p class="gobelin-titre" id="gobelin-titre">Le gobelin dort</p>
+        <p class="gobelin-detail" id="gobelin-detail">Aucune panne injectée.</p>
+      </div>
+      <a class="gobelin-lien" href="/q/dev-ui/quarkus-goblin/chaos-dashboard" target="_blank" rel="noopener">Réveiller le gobelin</a>
+    </section>
+
+    <dl class="compteurs">
+      <div class="compteur servies"><dt>Servies</dt><dd id="nb-servies">0</dd></div>
+      <div class="compteur refusees"><dt>Refusées</dt><dd id="nb-refusees">0</dd></div>
+      <div class="compteur perdues"><dt>Perdues</dt><dd id="nb-perdues">0</dd></div>
+      <div class="compteur attente"><dt>Service moyen</dt><dd><span id="temps-moyen">-</span><small> ms</small></dd></div>
+    </dl>
+  </header>
+
+  <main class="salle">
+    <section class="panneau comptoir" aria-labelledby="titre-comptoir">
+      <h2 id="titre-comptoir">Le comptoir</h2>
+      <p class="aide">Chaque commande, telle que le client la vit.</p>
+      <ol class="commandes" id="commandes">
+        <li class="vide">En attente des premiers aventuriers…</li>
+      </ol>
+    </section>
+
+    <div class="colonne">
+      <section class="panneau carte" id="carte" aria-labelledby="titre-carte">
+        <h2 id="titre-carte">La carte du jour</h2>
+        <p class="bandeau" id="bandeau-carte">Carte fraîche, tout droit du grimoire.</p>
+        <ul class="recettes">
+          {#for recette in recettes}
+          <li><span class="recette-nom">{recette.title}</span><span class="recette-prix">{recette.price} po</span></li>
+          {/for}
+        </ul>
+      </section>
+
+      <section class="panneau porte" aria-labelledby="titre-porte">
+        <h2 id="titre-porte">La porte de derrière</h2>
+        <div class="disjoncteur" id="disjoncteur" data-etat="CLOSED">
+          <span class="lanterne" aria-hidden="true"></span>
+          <div>
+            <p class="disjoncteur-titre" id="disjoncteur-titre">Disjoncteur fermé</p>
+            <p class="disjoncteur-detail" id="disjoncteur-detail">Les coursiers partent vers la guilde des marchands.</p>
+          </div>
+        </div>
+        <ol class="livraisons" id="livraisons">
+          <li class="vide">Aucune livraison pour l'instant.</li>
+        </ol>
+      </section>
+    </div>
+
+    <section class="panneau bourses" aria-labelledby="titre-bourses">
+      <h2 id="titre-bourses">Les bourses</h2>
+      <p class="aide">Une commande annulée ne coûte rien.</p>
+      <ul class="aventuriers" id="aventuriers">
+        {#for aventurier in aventuriers}
+        <li class="aventurier" data-id="{aventurier.id}" data-or="{aventurier.gold}">
+          <div class="aventurier-tete">
+            <span class="aventurier-nom">{aventurier.name}</span>
+            <span class="aventurier-classe">{aventurier.adventurerClass}</span>
+          </div>
+          <div class="aventurier-or"><span class="or">{aventurier.gold}</span> po</div>
+          <div class="jauge"><span></span></div>
+          <p class="aventurier-derniere"></p>
+        </li>
+        {/for}
+      </ul>
+    </section>
+  </main>
+
+  <footer class="pied">
+    <span id="connexion" class="connexion">Connexion à la salle…</span>
+    <span>Métriques, traces et logs : <a href="http://localhost:3000" target="_blank" rel="noopener">Grafana</a></span>
+  </footer>
+
+  <script src="/assets/salle.js"></script>
+</body>
+</html>

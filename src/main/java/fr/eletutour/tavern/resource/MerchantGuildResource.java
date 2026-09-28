@@ -38,8 +38,8 @@ public class MerchantGuildResource {
         long trajet = random.nextLong(30, 150);
         Thread.sleep(trajet);
         String carrier = CARRIERS.get(random.nextInt(CARRIERS.size()));
-        LOG.infof("La guilde livre %d %s, chariot de %s (%d ms de trajet)", (Object) request.quantity(), request.ingredient(),
-                carrier, trajet);
+        LOG.infof("La guilde livre %d %s, conduit par %s (%d ms de trajet)", (Object) request.quantity(),
+                request.ingredient(), carrier, trajet);
         return new Delivery(request.ingredient(), request.quantity(), carrier);
     }
 }

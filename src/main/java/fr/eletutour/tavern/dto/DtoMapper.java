@@ -33,6 +33,6 @@ public final class DtoMapper {
 
     public static OrderDTO toDto(TavernOrder order) {
         return new OrderDTO(order.id, order.adventurer.id, order.adventurer.name, order.recipe.id, order.recipe.title,
-                order.quantity, order.total, order.status, order.createdAt);
+                order.quantity, order.total, order.adventurer.gold, order.status, order.createdAt);
     }
 }

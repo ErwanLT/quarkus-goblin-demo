@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
@@ -21,6 +22,7 @@ import fr.eletutour.tavern.dto.IngredientDTO;
 import fr.eletutour.tavern.dto.IngredientRequest;
 import fr.eletutour.tavern.dto.RecipeDTO;
 import fr.eletutour.tavern.dto.RecipeRequest;
+import fr.eletutour.tavern.event.CarteServie;
 import fr.eletutour.tavern.exception.business.TavernError;
 import fr.eletutour.tavern.exception.business.TavernException;
 import fr.eletutour.tavern.repository.IngredientRepository;
@@ -49,6 +51,9 @@ public class GrimoireService {
 
     @Inject
     StockRepository stockRepository;
+
+    @Inject
+    Event<CarteServie> carteServie;
 
     private final AtomicReference<List<RecipeDTO>> ardoise = new AtomicReference<>(List.of());
 
@@ -85,12 +90,14 @@ public class GrimoireService {
         List<RecipeDTO> carte = recipeRepository.listAllWithIngredients().stream().map(DtoMapper::toDto).toList();
         ardoise.set(carte);
         LOG.debugf("Grimoire consulté : %d recette(s), ardoise mise à jour", carte.size());
+        carteServie.fire(new CarteServie(CarteServie.Source.FRAICHE, carte.size()));
         return carte;
     }
 
     List<RecipeDTO> lireLArdoise() {
         List<RecipeDTO> carte = ardoise.get();
         LOG.warnf("La cave ne répond plus : le tavernier lit l'ardoise (%d recette(s))", carte.size());
+        carteServie.fire(new CarteServie(CarteServie.Source.ARDOISE, carte.size()));
         return carte;
     }
 

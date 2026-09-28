@@ -30,6 +30,7 @@ L'application reprend les briques présentées dans la série d'articles *The Fa
 | **Observabilité** | Micrometer / Prometheus, OpenTelemetry (traces HTTP, JDBC et métier, logs), logs corrélés aux traces, health checks |
 | **Supervision** | Docker Compose : PostgreSQL, OpenTelemetry Collector, Tempo (traces), Loki (logs), Prometheus (métriques et règles d'alerte), Grafana (2 dashboards) |
 | **Chaos** | Quarkus Goblin 0.3.0, avec ses modules métriques et traces |
+| **La salle** | L'écran de démo : ce que vivent les clients, en direct (Qute et SSE) |
 
 ```mermaid
 flowchart LR
@@ -82,10 +83,11 @@ Elle est prête quand la console affiche `Listening on: http://localhost:8080`. 
 remplit la cave (8 ingrédients, 5 recettes, 6 aventuriers). Si PostgreSQL n'est pas encore prêt, arrêtez-la
 (`Ctrl`+`C`), attendez l'étape 1, et relancez-la.
 
-### 3. Ouvrir Grafana et la Dev UI
+### 3. Ouvrir la salle, la Dev UI et Grafana
 
 | Quoi | Où |
 |---|---|
+| **La salle de la taverne** (l'écran de démo) | http://localhost:8080/salle |
 | Grafana, dossier *The Falling Whale* | http://localhost:3000 (accès anonyme, sans connexion) |
 | Dev UI (et le gobelin) | http://localhost:8080/q/dev-ui, carte **Goblin** |
 | Swagger UI | http://localhost:8080/q/swagger-ui |
@@ -172,6 +174,28 @@ Toutes les erreurs suivent le même format, quelle que soit leur origine :
   - le filet de sécurité `GlobalExceptionMapper`.
 - Le `traceId` de chaque erreur permet de retrouver sa trace complète dans Grafana (**Explore > Tempo**).
 
+## La salle de la taverne
+
+Des dashboards convainquent un public d'ops, mais en démo, le public doit **voir la taverne souffrir et tenir**. La
+salle (http://localhost:8080/salle) montre ce que vivent les clients, en direct :
+
+| Panneau | Ce qu'il montre |
+|---|---|
+| **Le gobelin** | où il frappe (la cave, les cuisines, la porte d'entrée…), comment, et sur quelle part des requêtes |
+| **Les compteurs** | commandes servies, refusées (4xx) et perdues (5xx), temps de service moyen |
+| **Le comptoir** | chaque commande avec son aventurier, sa recette et son temps : verte si servie, orange si refusée, rouge si abandonnée (`@Timeout`) ou perdue |
+| **La carte du jour** | se transforme en ardoise à la craie quand le grimoire sert sa dernière carte connue (`@Fallback`) |
+| **La porte de derrière** | la lanterne du disjoncteur de la guilde (verte fermé, rouge ouvert, orange à moitié) et les chariots qui arrivent, ou pas |
+| **Les bourses** | l'or de chaque aventurier : il baisse à chaque commande servie, et ne bouge pas quand la commande est annulée |
+
+Mise en scène conseillée : la salle en grand, la Dev UI Goblin à côté (lien *Réveiller le gobelin* dans la salle).
+On clique dans la Dev UI, la salle réagit, et Grafana, Tempo et Loki n'arrivent qu'à la fin, pour expliquer *pourquoi*.
+
+La salle observe l'application, elle ne simule rien : les services publient des événements du domaine (carte servie,
+réapprovisionnement), un filtre JAX-RS regarde les commandes sortir du comptoir (y compris les `504`, qui ne sortent
+jamais du service), et une ressource `/salle` les pousse en SSE. Elle est exclue du ciblage Goblin, des métriques HTTP
+et des traces, pour que l'écran de démo reste lisible et ne fausse pas les dashboards.
+
 ## La tour de guet
 
 - **Métriques métier** :
@@ -207,12 +231,12 @@ Au démarrage, le gobelin ajoute déjà 50 à 400 ms de latence sur 25 % des req
 
 Lancez `./scripts/trafic.sh` dans un terminal, gardez les deux dashboards Grafana ouverts, puis essayez :
 
-| # | Dans la Dev UI | Ce qui se passe | Où le voir |
+| # | Dans la Dev UI | Ce qui se passe | Où le voir (la salle, puis Grafana) |
 |---|---|---|---|
 | 1 | Couche **Inbound REST**, **Latency** `600`-`900` ms, niveau `100` | Tout ralentit ; l'alerte `TavernOrderLatencyP95High` passe en *firing* au bout d'une minute | Latences par route, http://localhost:9090/alerts |
-| 2 | Couche **Service** seule, **Latency** `1800`-`2000` ms | Les commandes dépassent le `@Timeout(1500)` de `OrderService` : `504`, et la transaction est annulée (la bourse n'est pas débitée) | Statuts `504`, *Fault Tolerance : nouvelles tentatives et délais* |
-| 3 | Couche **Database** seule, **Exception** | La cave tombe : `GET /grimoire/recettes` réessaie deux fois (`@Retry`), puis sert l'*ardoise*, la dernière carte connue (`@Fallback`), toujours en `200` ; les commandes, elles, échouent en `500` | *Replis servis*, assauts `database` |
-| 4 | Couche **Outbound HTTP** seule, **client exception** | La guilde des marchands ne répond plus : deux nouvelles tentatives, puis `MARCHAND_ABSENT` ; après quelques échecs, le `@CircuitBreaker` s'ouvre et n'envoie plus de coursier pendant 10 s : le repli est alors immédiat (`@Retry(abortOn = CircuitBreakerOpenException.class)`) | Assauts `rest-client`, *Disjoncteur de la guilde des marchands* |
+| 2 | Couche **Service** seule, **Latency** `1800`-`2000` ms | Les commandes dépassent le `@Timeout(1500)` de `OrderService` : `504`, et la transaction est annulée (la bourse n'est pas débitée) | Le comptoir se remplit de commandes *abandonnées* à 1,5 s, les bourses ne bougent plus ; statuts `504`, *Fault Tolerance : nouvelles tentatives et délais* |
+| 3 | Couche **Database** seule, **Exception** | La cave tombe : `GET /grimoire/recettes` réessaie deux fois (`@Retry`), puis sert l'*ardoise*, la dernière carte connue (`@Fallback`), toujours en `200` ; les commandes, elles, échouent en `500` | La carte passe à l'ardoise, le comptoir se remplit de commandes *perdues* ; *Replis servis*, assauts `database` |
+| 4 | Couche **Outbound HTTP** seule, **client exception** | La guilde des marchands ne répond plus : deux nouvelles tentatives, puis `MARCHAND_ABSENT` ; après quelques échecs, le `@CircuitBreaker` s'ouvre et n'envoie plus de coursier pendant 10 s : le repli est alors immédiat (`@Retry(abortOn = CircuitBreakerOpenException.class)`) | La lanterne de la porte de derrière passe au rouge, les chariots n'arrivent plus ; assauts `rest-client`, *Disjoncteur de la guilde des marchands* |
 | 5 | Couche **Inbound REST**, **HTTP Status** `503` à `30` % | Des `503` aléatoires, la courbe d'erreurs monte, `TavernErrorRateHigh` se déclenche | *Réponses par statut* |
 | 6 | **Auto-off** 5 min, puis fermez la Dev UI | Le gobelin s'arrête tout seul à l'échéance | Stat *Chaos* |
 

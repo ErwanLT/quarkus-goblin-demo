@@ -52,6 +52,12 @@
             <artifactId>quarkus-smallrye-openapi</artifactId>
         </dependency>
 
+        <!-- La salle : la page de démo, rendue par Qute et animée en SSE -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-qute</artifactId>
+        </dependency>
+
         <!-- La cave : persistance -->
         <dependency>
             <groupId>io.quarkus</groupId>

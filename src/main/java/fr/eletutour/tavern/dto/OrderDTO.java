@@ -15,6 +15,7 @@ public record OrderDTO(
         @Schema(description = "Titre de la recette", examples = "Hydromel de l'Elfe") String recipeTitle,
         @Schema(description = "Nombre de portions", examples = "2") int quantity,
         @Schema(description = "Total réglé en pièces d'or", examples = "16") int total,
+        @Schema(description = "Pièces d'or restant dans la bourse de l'aventurier", examples = "84") int adventurerGold,
         @Schema(description = "État", examples = "SERVIE") OrderStatus status,
         @Schema(description = "Date de la commande") Instant createdAt) {
 }

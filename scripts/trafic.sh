@@ -18,7 +18,10 @@ call() {
 }
 
 commander() {
-  local adventurer=$(( RANDOM % 6 + 1 )) recipe=$(( RANDOM % 5 + 1 )) quantity=$(( RANDOM % 3 + 1 ))
+  # les plats courants (recettes 1 à 4), et de temps en temps un Élixir du Phénix : 320 pièces d'or la portion, il
+  # viderait les bourses en quelques minutes
+  local adventurer=$(( RANDOM % 6 + 1 )) recipe=$(( RANDOM % 4 + 1 )) quantity=$(( RANDOM % 3 + 1 ))
+  if [ $(( RANDOM % 20 )) -eq 0 ]; then recipe=5; quantity=1; fi
   call -X POST "$BASE_URL/commandes" -d "{\"adventurerId\":$adventurer,\"recipeId\":$recipe,\"quantity\":$quantity}"
 }
 

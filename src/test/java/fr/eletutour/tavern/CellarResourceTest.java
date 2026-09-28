@@ -25,7 +25,7 @@ class CellarResourceTest {
                 .then().statusCode(200)
                 .body("status", equalTo("LIVRE"))
                 .body("delivered", equalTo(20))
-                .body("message", startsWith("Livré par le chariot de"))
+                .body("message", startsWith("Livré par le chariot d"))
                 .body("stock.quantity", equalTo(avant + 20));
     }
 
