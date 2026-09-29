@@ -16,7 +16,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                 @Tag(name = TavernApi.CAVE, description = "Les étagères de la cave et leur réapprovisionnement"),
                 @Tag(name = TavernApi.AVENTURIERS, description = "Le registre des aventuriers"),
                 @Tag(name = TavernApi.COMMANDES, description = "Le comptoir des commandes"),
-                @Tag(name = TavernApi.GUILDE, description = "Fournisseur simulé, appelé par le REST Client de la cave")
+                @Tag(name = TavernApi.GUILDE, description = "Fournisseur simulé, appelé par le REST Client de la cave"),
+                @Tag(name = TavernApi.EXPLOITATION, description = "La main courante des incidents et leurs post-mortems")
         })
 public class TavernApi extends Application {
 
@@ -25,6 +26,7 @@ public class TavernApi extends Application {
     public static final String AVENTURIERS = "Aventuriers";
     public static final String COMMANDES = "Commandes";
     public static final String GUILDE = "Guilde des marchands";
+    public static final String EXPLOITATION = "Exploitation";
 
     public static final String PROBLEM_JSON = "application/problem+json";
 }

@@ -10,6 +10,7 @@ public enum TavernError {
     AVENTURIER_INTROUVABLE(404, "Ressource introuvable", "L'aventurier %s n'est pas inscrit au registre."),
     COMMANDE_INTROUVABLE(404, "Ressource introuvable", "La commande %s n'existe pas dans le livre des commandes."),
     STOCK_INTROUVABLE(404, "Ressource introuvable", "Aucune étagère de la cave ne contient l'ingrédient %s."),
+    INCIDENT_INTROUVABLE(404, "Ressource introuvable", "L'incident %s n'est pas dans la main courante."),
     INGREDIENT_EXISTANT(409, "Conflit de données", "L'ingrédient '%s' est déjà dans la réserve."),
     AVENTURIER_EXISTANT(409, "Conflit de données", "L'aventurier '%s' est déjà inscrit au registre."),
     RUPTURE_DE_STOCK(409, "Rupture de stock", "La cave ne contient pas de quoi préparer %d portion(s) de '%s'."),

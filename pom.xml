@@ -16,7 +16,8 @@
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>3.39.5</quarkus.platform.version>
-        <goblin.version>0.3.0</goblin.version>
+        <!-- 0.3.1 en attente de publication : installer Goblin en local (./mvnw install dans quarkus-goblin) -->
+        <goblin.version>999-SNAPSHOT</goblin.version>
         <compiler-plugin.version>3.14.0</compiler-plugin.version>
         <surefire-plugin.version>3.5.3</surefire-plugin.version>
     </properties>
@@ -50,6 +51,20 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-openapi</artifactId>
+        </dependency>
+
+        <!-- La main courante : le journal des incidents, tenu par une tâche planifiée, son schéma versionné par Flyway -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway-postgresql</artifactId>
         </dependency>
 
         <!-- La salle : la page de démo, rendue par Qute et animée en SSE -->

@@ -31,8 +31,9 @@ L'application reprend les briques présentées dans la série d'articles *The Fa
 | **Résilience** | SmallRye Fault Tolerance : `@Retry`, `@Fallback`, `@Timeout`, `@CircuitBreaker`, `@RateLimit` |
 | **Observabilité** | Micrometer / Prometheus, OpenTelemetry (traces HTTP, JDBC et métier, logs), logs corrélés aux traces, health checks |
 | **Supervision** | Docker Compose : PostgreSQL, OpenTelemetry Collector, Tempo (traces), Loki (logs), Prometheus (métriques et règles d'alerte), Grafana (2 dashboards) |
-| **Chaos** | Quarkus Goblin 0.3.0, avec ses modules métriques et traces |
+| **Chaos** | Quarkus Goblin 0.3.1 (en `999-SNAPSHOT` en attendant sa publication), avec ses modules métriques et traces |
 | **La salle** | L'écran de démo : ce que vivent les clients, en direct (Qute et SSE) |
+| **La main courante** | Le journal des incidents, tenu dans PostgreSQL, et le post-mortem sans blâme de chacun |
 
 ```mermaid
 flowchart LR
@@ -53,7 +54,9 @@ flowchart LR
 
 ## Ouvrir la taverne
 
-Prérequis : Java 25 et Docker (Docker Desktop sous macOS et Windows).
+Prérequis : Java 25 et Docker (Docker Desktop sous macOS et Windows). En attendant la publication de Goblin 0.3.1,
+installez-le en local : `./mvnw install -DskipTests` dans un clone de
+[quarkus-goblin](https://github.com/quarkiverse/quarkus-goblin), qui fournit la version `999-SNAPSHOT` utilisée ici.
 
 L'application tourne sur la machine, en **dev mode** : c'est le seul mode où Quarkus Goblin est actif, un build de
 production ne contient aucune trace du gobelin. Le compose fournit la base de données et toute la stack
@@ -199,8 +202,45 @@ jamais du service), et une ressource `/salle` les pousse en SSE. Elle est exclue
 et des traces, pour que l'écran de démo reste lisible et ne fausse pas les dashboards.
 
 La page elle-même ne lit jamais la base : la carte et les bourses sont chargées au démarrage, puis tenues à jour
-par les commandes servies. Goblin 0.3.0 attaque aussi les appels faits depuis une requête exclue du ciblage : sans
-ça, la salle tomberait en `500` pendant une panne de la cave.
+par les commandes servies : l'écran de démo reste debout même quand la cave tombe. (Avec Goblin 0.3.0, qui attaquait
+aussi les appels faits depuis une requête exclue du ciblage, la salle tombait en `500` pendant une panne de la cave.)
+
+## La main courante et le post-mortem
+
+Le lendemain d'un incendie, le tavernier ne se demande pas qui a mis le feu : il relit la main courante. La taverne tient
+la sienne toute seule, dans PostgreSQL :
+
+- **un incident s'ouvre** au premier signe de dégradation vu par un client ou par la résilience : commande perdue
+  (`5xx`) ou abandonnée (`504`), carte servie depuis l'ardoise, livraison manquée, disjoncteur ouvert ;
+- pendant l'incident, **chaque fait est consigné** : les commandes, les replis, les livraisons, les changements d'état du
+  disjoncteur, et chaque assaut du gobelin, noté par un `AssaultObserver`, le point d'extension de Goblin ;
+- **il se clôt** après 30 s sans dégradation, disjoncteur fermé (`taverne.main-courante.calme`). Un incident en cours
+  au redémarrage de la taverne est marqué `INTERROMPU`.
+
+Le post-mortem est tiré de ces seuls faits, sans blâme : chaque phrase découle d'un fait compté.
+
+| Rubrique | Ce qu'elle contient |
+|---|---|
+| Chronologie | l'ouverture, la configuration du gobelin à cet instant, le premier fait de chaque sorte, chaque changement d'état du disjoncteur et du gobelin, la clôture |
+| Impact | commandes servies, refusées, refoulées, abandonnées et perdues, commande la plus longue, cartes servies depuis l'ardoise, livraisons manquées, temps disjoncteur ouvert, assauts du gobelin |
+| Cause probable | ce que le gobelin a injecté pendant l'incident, par source et par type ; ou le fait qu'il n'a rien injecté |
+| Ce qui a fonctionné, ce qui n'a pas fonctionné | les garde-fous qui ont tenu, et ce que les clients ont subi sans repli |
+| Actions correctives | déduites des faits : un repli pour les commandes quand la cave tombe, une alerte sur la latence, une relance des livraisons manquées... |
+| Rallumer le feu | la commande `scripts/gobelin.mjs` qui rejoue la même attaque, pour prouver qu'un correctif tient |
+
+```bash
+curl -s localhost:8080/exploitation/incidents                                         # les derniers incidents
+curl -s localhost:8080/exploitation/incidents/1/post-mortem                           # en JSON
+curl -s -H 'Accept: text/markdown' localhost:8080/exploitation/incidents/1/post-mortem  # à coller dans le compte rendu
+```
+
+La salle affiche l'incident en cours dans son pied de page, puis le lien vers le dernier post-mortem.
+
+Pourquoi PostgreSQL change tout ici : la cave est recréée à chaque démarrage pour la démo (`drop-and-create`), mais la
+main courante a sa propre unité de persistance (`main-courante`), dans son propre schéma, en `update`. Elle survit aux
+redémarrages et aux rechargements du dev mode : le post-mortem se lit bien le lendemain. Elle ne brûle pas non plus
+avec la taverne : les faits sont posés dans une file en mémoire, puis consignés toutes les 2 s par une tâche planifiée,
+hors de toute requête attaquée par le gobelin ; si la base ne répond plus, ils attendent la consignation suivante.
 
 ## La tour de guet
 
@@ -293,7 +333,9 @@ Les tests tournent sur H2, sans Docker :
 - `ObservabilityTest` : santé, métriques métier, OpenAPI ;
 - `ChaosResilienceTest` : le gobelin attaque les tests (`quarkus.goblin.test.enabled=true` dans un `@TestProfile`),
   et on vérifie les scénarios 2, 3 et 4 ci-dessus : l'ardoise, le `504`, le marchand absent, et le disjoncteur ouvert qui
-  répond sans attendre les nouvelles tentatives.
+  répond sans attendre les nouvelles tentatives ;
+- `PostMortemTest` : la cave prend feu, un incident s'ouvre, se clôt au retour du calme, et son post-mortem nomme la
+  cause, compte les dégâts et propose les actions correctives.
 
 Dans les autres tests, le gobelin reste inactif : c'est le comportement par défaut de Quarkus Goblin en test.
 

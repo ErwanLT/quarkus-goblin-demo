@@ -152,6 +152,8 @@ h2 { margin: 0; font: 700 26px/1.2 var(--titre); color: var(--laiton); }
 .pied { display: flex; justify-content: space-between; gap: 16px; padding-block: 8px 14px; color: var(--texte-doux); font-size: 14px; border-top: 1px solid var(--trait); }
 .connexion::before { content: "●"; margin-right: 6px; color: var(--orange); }
 .connexion.ok::before { color: var(--vert); }
+.incident.en-cours { color: var(--orange); font-weight: 600; }
+.incident.en-cours::before { content: "●"; margin-right: 6px; color: var(--rouge); }
 
 @media (prefers-reduced-motion: no-preference) {
   .commande, .livraison { animation: entree .35s ease-out; }

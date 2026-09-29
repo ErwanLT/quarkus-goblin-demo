@@ -22,8 +22,10 @@ import fr.eletutour.tavern.dto.AdventurerDTO;
 import fr.eletutour.tavern.dto.OrderDTO;
 import fr.eletutour.tavern.dto.RecipeDTO;
 import fr.eletutour.tavern.event.CarteServie;
+import fr.eletutour.tavern.event.CommandeAuComptoir;
 import fr.eletutour.tavern.event.Reapprovisionnement;
 import fr.eletutour.tavern.exception.model.Problem;
+import fr.eletutour.tavern.incident.MainCourante;
 import fr.eletutour.tavern.service.AdventurerService;
 import fr.eletutour.tavern.service.GrimoireService;
 import fr.eletutour.tavern.service.MerchantService;
@@ -59,6 +61,9 @@ public class SalleService {
 
     @Inject
     AdventurerService adventurerService;
+
+    @Inject
+    MainCourante mainCourante;
 
     private volatile List<RecipeDTO> carteDuJour = List.of();
     private final Map<Long, AdventurerDTO> bourses = new ConcurrentHashMap<>();
@@ -107,16 +112,14 @@ public class SalleService {
     /**
      * Une commande vient de quitter le comptoir, servie ou non.
      *
-     * @param status statut HTTP de la réponse
-     * @param entity {@link OrderDTO} quand la commande est servie, {@link Problem} sinon
-     * @param dureeMs temps passé au comptoir
+     * @param commande la réponse du comptoir : {@link OrderDTO} quand la commande est servie, {@link Problem} sinon
      */
-    void commande(int status, Object entity, long dureeMs) {
+    void commande(@Observes CommandeAuComptoir commande) {
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("statut", statut(status));
-        data.put("status", status);
-        data.put("dureeMs", dureeMs);
-        switch (entity) {
+        data.put("statut", statut(commande.status()));
+        data.put("status", commande.status());
+        data.put("dureeMs", commande.dureeMs());
+        switch (commande.reponse()) {
             case OrderDTO order -> {
                 bourses.computeIfPresent(order.adventurerId(),
                         (id, aventurier) -> new AdventurerDTO(id, aventurier.name(), aventurier.adventurerClass(),
@@ -165,6 +168,7 @@ public class SalleService {
         data.put("gobelin", etatDuGobelin());
         data.put("disjoncteur", etatDuDisjoncteur().name());
         data.put("carte", carteData());
+        data.put("incident", incidentData());
         return SalleEvent.of("etat", data);
     }
 
@@ -173,6 +177,20 @@ public class SalleService {
         data.put("source", carte.get().name());
         data.put("depuis", carteDepuis.get().toString());
         data.put("ardoisesServies", ardoisesServies.get());
+        return data;
+    }
+
+    /**
+     * L'incident en cours tel que la main courante le tient, ou le dernier incident terminé et son post-mortem.
+     */
+    private Map<String, Object> incidentData() {
+        Map<String, Object> data = new LinkedHashMap<>();
+        mainCourante.incidentEnCours().ifPresent(incident -> {
+            data.put("id", incident.id());
+            data.put("depuis", incident.depuis().toString());
+            data.put("declencheur", incident.declencheur());
+        });
+        mainCourante.dernierIncidentTermine().ifPresent(id -> data.put("dernier", id));
         return data;
     }
 

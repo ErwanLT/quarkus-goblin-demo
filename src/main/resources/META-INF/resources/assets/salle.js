@@ -124,6 +124,22 @@
     HALF_OPEN: ['Disjoncteur à moitié ouvert', "Un coursier d'essai part voir si la guilde répond de nouveau."],
   };
 
+  function incident(data) {
+    const zone = $('incident');
+    zone.replaceChildren();
+    zone.classList.toggle('en-cours', data.id !== undefined);
+    if (data.id !== undefined) {
+      zone.textContent = `Incident ${data.id} en cours depuis ${heure(data.depuis)} : ${data.declencheur}`;
+    } else if (data.dernier !== undefined) {
+      const lien = document.createElement('a');
+      lien.href = `/exploitation/incidents/${data.dernier}/post-mortem`;
+      lien.target = '_blank';
+      lien.rel = 'noopener';
+      lien.textContent = `post-mortem de l'incident ${data.dernier}`;
+      zone.append('Main courante : ', lien);
+    }
+  }
+
   function disjoncteur(etat) {
     const [titre, detail] = DISJONCTEUR[etat] || [etat, ''];
     $('disjoncteur').dataset.etat = etat;
@@ -167,6 +183,7 @@
           gobelin(e.data.gobelin);
           disjoncteur(e.data.disjoncteur);
           carte(e.data.carte);
+          incident(e.data.incident);
           break;
         default: break;
       }
