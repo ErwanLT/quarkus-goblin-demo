@@ -234,6 +234,92 @@ curl -s localhost:8080/exploitation/incidents/1/post-mortem                     
 curl -s -H 'Accept: text/markdown' localhost:8080/exploitation/incidents/1/post-mortem  # à coller dans le compte rendu
 ```
 
+Voici un vrai post-mortem, tiré d'une soirée où la cave a pris feu (`DATABASE`, exception, 50 %) avant que la guilde
+des marchands ne réponde plus (`HTTP_OUT`), sous le trafic de `scripts/trafic.sh` :
+
+<details>
+<summary>Post-mortem de l'incident 1, en Markdown</summary>
+
+```markdown
+# Post-mortem de l'incident 1
+
+- **Statut** : CLOS
+- **Début** : 2026-09-29 08:24:46
+- **Fin** : 2026-09-29 08:26:11
+- **Durée** : 84 s
+- **Déclencheur** : Commande perdue (erreur serveur) : Erreur interne du serveur
+
+## Chronologie
+
+| Heure | Étape | Détail |
+|---|---|---|
+| 08:24:46 | Ouverture de l'incident | Commande perdue (erreur serveur) : Erreur interne du serveur |
+| 08:24:46 | Premier fait : État du gobelin à l'ouverture | Configuration du gobelin : {"layers":["DATABASE"],"exceptionEnabled":true,"level":50,...} |
+| 08:24:46 | Premier fait : Commande perdue (erreur serveur) | Erreur interne du serveur (puis 25 autre(s)) |
+| 08:24:47 | Premier fait : Assaut du gobelin | exception sur Database <default> connection (puis 98 autre(s)) |
+| 08:24:51 | Premier fait : Carte servie depuis l'ardoise | 5 recette(s) servies depuis l'ardoise (puis 3 autre(s)) |
+| 08:24:51 | Premier fait : Carte de nouveau fraîche | La cave répond de nouveau : carte fraîche (puis 3 autre(s)) |
+| 08:25:06 | Premier fait : Commande refusée | Bourse insuffisante (puis 26 autre(s)) |
+| 08:25:16 | Disjoncteur ouvert | La guilde est isolée : plus aucun coursier ne part |
+| 08:25:16 | Premier fait : Livraison manquée | Pain de seigle : le marchand n'est pas venu (puis 8 autre(s)) |
+| 08:25:26 | Disjoncteur à moitié ouvert | Un coursier d'essai part vers la guilde |
+| 08:25:30 | Disjoncteur ouvert | La guilde est isolée : plus aucun coursier ne part |
+| 08:25:36 | Le gobelin s'endort | Le gobelin s'endort |
+| 08:25:40 | Disjoncteur à moitié ouvert | Un coursier d'essai part vers la guilde |
+| 08:25:45 | Disjoncteur refermé | La guilde répond de nouveau |
+| 08:26:11 | Clôture de l'incident | Retour au calme : aucune dégradation depuis 30 s, disjoncteur fermé |
+
+## Impact
+
+| Mesure | Valeur |
+|---|---|
+| Commandes servies | 55 |
+| Commandes refusées (métier) | 27 |
+| Commandes refoulées (429) | 0 |
+| Commandes abandonnées (504) | 0 |
+| Commandes perdues (5xx) | 26 |
+| Commande la plus longue | 402 ms |
+| Cartes servies depuis l'ardoise | 4 |
+| Livraisons manquées | 9 |
+| Disjoncteur ouvert | 20 s |
+| Assauts du gobelin | 99 |
+
+## Cause probable
+
+- Le gobelin a injecté 61 exception (source database), par exemple : exception sur Database <default> connection
+- Le gobelin a injecté 34 latency (source server), par exemple : latency sur OrderResource.commander (50 - 400 ms)
+- Le gobelin a injecté 4 exception (source rest-client), par exemple : exception sur REST-Client POST http://localhost:8080/guilde-des-marchands/livraisons
+
+## Ce qui a fonctionné
+
+- La carte est restée servie : 4 fois depuis l'ardoise, la dernière carte connue (@Retry puis @Fallback du grimoire)
+- Chaque réapprovisionnement sans livraison a reçu une réponse (repli MARCHAND_ABSENT) : 9 au total, et le disjoncteur a isolé la guilde pendant 20 s
+- 55 commande(s) servie(s) pendant l'incident
+- La taverne est revenue au calme d'elle-même, sans redémarrage
+
+## Ce qui n'a pas fonctionné
+
+- 26 commande(s) perdue(s) en erreur serveur : ces clients n'ont reçu aucun repli
+- 9 réapprovisionnement(s) sans livraison : les étagères se vident, et rien ne relance ces livraisons ensuite
+
+## Actions correctives
+
+- Les commandes n'ont aucun repli quand la cave tombe : répondre 503 avec un Retry-After, ou mettre les commandes en attente plutôt que de les perdre
+- Relancer les réapprovisionnements manqués une fois la guilde revenue : aucune relance automatique n'existe aujourd'hui
+- L'ardoise ne contient que la dernière carte lue avec succès : une recette ajoutée pendant la panne n'y apparaît pas, le signaler aux clients
+- Une fois un correctif en place, rallumer le même feu (commande ci-dessous) pour prouver qu'il tient
+
+## Rallumer le feu
+
+node scripts/gobelin.mjs armer '{"layers":["DATABASE"],"exceptionEnabled":true,"level":50,...}' && node scripts/gobelin.mjs actif on
+```
+
+</details>
+
+La cause probable compte aussi les 34 latences de fond du gobelin, celles de sa configuration de départ (50 à 400 ms sur
+25 % des requêtes) : le post-mortem ne trie pas les faits, il les rapporte tous. Et « Rallumer le feu » rejoue la
+configuration du gobelin à l'ouverture de l'incident, ici la panne de la cave, pas la panne de la guilde qui a suivi.
+
 La salle affiche l'incident en cours dans son pied de page, puis le lien vers le dernier post-mortem.
 
 Pourquoi PostgreSQL change tout ici : la cave est recréée à chaque démarrage pour la démo (`drop-and-create`), mais la
