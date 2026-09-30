@@ -16,7 +16,6 @@
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>3.39.5</quarkus.platform.version>
-        <!-- 0.3.1 en attente de publication : installer Goblin en local (./mvnw install dans quarkus-goblin) -->
         <goblin.version>0.3.1</goblin.version>
         <compiler-plugin.version>3.14.0</compiler-plugin.version>
         <surefire-plugin.version>3.5.3</surefire-plugin.version>

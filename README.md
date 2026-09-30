@@ -31,7 +31,7 @@ L'application reprend les briques présentées dans la série d'articles *The Fa
 | **Résilience** | SmallRye Fault Tolerance : `@Retry`, `@Fallback`, `@Timeout`, `@CircuitBreaker`, `@RateLimit` |
 | **Observabilité** | Micrometer / Prometheus, OpenTelemetry (traces HTTP, JDBC et métier, logs), logs corrélés aux traces, health checks |
 | **Supervision** | Docker Compose : PostgreSQL, OpenTelemetry Collector, Tempo (traces), Loki (logs), Prometheus (métriques et règles d'alerte), Grafana (2 dashboards) |
-| **Chaos** | Quarkus Goblin 0.3.1 (en `999-SNAPSHOT` en attendant sa publication), avec ses modules métriques et traces |
+| **Chaos** | Quarkus Goblin 0.3.1, avec ses modules métriques et traces |
 | **La salle** | L'écran de démo : ce que vivent les clients, en direct (Qute et SSE) |
 | **La main courante** | Le journal des incidents, tenu dans PostgreSQL, et le post-mortem sans blâme de chacun |
 
@@ -54,9 +54,7 @@ flowchart LR
 
 ## Ouvrir la taverne
 
-Prérequis : Java 25 et Docker (Docker Desktop sous macOS et Windows). En attendant la publication de Goblin 0.3.1,
-installez-le en local : `./mvnw install -DskipTests` dans un clone de
-[quarkus-goblin](https://github.com/quarkiverse/quarkus-goblin), qui fournit la version `999-SNAPSHOT` utilisée ici.
+Prérequis : Java 25 et Docker (Docker Desktop sous macOS et Windows).
 
 L'application tourne sur la machine, en **dev mode** : c'est le seul mode où Quarkus Goblin est actif, un build de
 production ne contient aucune trace du gobelin. Le compose fournit la base de données et toute la stack
