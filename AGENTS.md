@@ -102,18 +102,11 @@ La salle (http://localhost:8080/salle) montre au public ce que vivent les client
 
 ## Les promesses de la taverne
 
-Voici ce que la taverne promet sous la panne. Chaque promesse est une hypothèse à vérifier, pas une vérité : mesure.
-
-| # | Situation | Promesse |
-|---|---|---|
-| P1 | La base de données ne répond plus | La carte (`GET /grimoire/recettes`) reste servie en `200`, depuis l'ardoise, la dernière carte connue. |
-| P2 | La cuisine est trop lente (> 1,5 s) | `POST /commandes` répond `504` en 1,5 s environ, et **l'aventurier n'est pas débité**. |
-| P3 | La base de données ne répond plus | Une commande échoue proprement (`5xx` en `problem+json`), et rien n'est débité. |
-| P4 | La guilde des marchands ne répond plus | `POST /cave/stocks/{id}/reapprovisionnement` répond `200` avec `status: MARCHAND_ABSENT` et `delivered: 0`. |
-| P5 | La guilde reste injoignable | Après quelques échecs, le disjoncteur s'ouvre : le repli devient **immédiat, en moins de 300 ms**, sans nouvelles tentatives, pendant 10 s. |
-| P6 | Trop de commandes d'un coup | Au-delà de 60 commandes en 10 s, le comptoir refuse proprement (`429`), sans erreur serveur. |
-| P7 | Toute panne | Aucune réponse ne fuit une trace de pile ou un message technique interne ; aucune erreur `4xx` ne devient `5xx`. |
-| P8 | Après la panne | Une fois le gobelin endormi, la taverne revient à la normale sans redémarrage. |
+Ce que la taverne promet sous la panne est dans [`RESILIENCE.md`](RESILIENCE.md), à la racine du dépôt : ce qu'est une
+taverne en bonne santé, les dépendances et ce qui les protège, les promesses P1 à P8, les points ouverts déjà connus et
+ce qui est hors limites. **Lis-le avant ta première expérience.** Chaque promesse est une hypothèse à vérifier, pas une
+vérité : mesure. Un point ouvert est déjà connu : ne le rapporte pas comme une découverte, dis seulement s'il tient
+toujours.
 
 Quelques requêtes utiles :
 
