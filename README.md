@@ -31,7 +31,7 @@ L'application reprend les briques présentées dans la série d'articles *The Fa
 | **Résilience** | SmallRye Fault Tolerance : `@Retry`, `@Fallback`, `@Timeout`, `@CircuitBreaker`, `@RateLimit` |
 | **Observabilité** | Micrometer / Prometheus, OpenTelemetry (traces HTTP, JDBC et métier, logs), logs corrélés aux traces, health checks |
 | **Supervision** | Docker Compose : PostgreSQL, OpenTelemetry Collector, Tempo (traces), Loki (logs), Prometheus (métriques et règles d'alerte), Grafana (2 dashboards) |
-| **Chaos** | Quarkus Goblin 1.0.0, avec ses modules métriques et traces, en scope `provided` : voir [Le gobelin reste à la porte](#le-gobelin-reste-à-la-porte) |
+| **Chaos** | Quarkus Goblin 1.0.1, avec ses modules métriques et traces, en scope `provided` : voir [Le gobelin reste à la porte](#le-gobelin-reste-à-la-porte) |
 | **La salle** | L'écran de démo : ce que vivent les clients, en direct (Qute et SSE) |
 | **La main courante** | Le journal des incidents, tenu dans PostgreSQL, et le post-mortem sans blâme de chacun |
 
