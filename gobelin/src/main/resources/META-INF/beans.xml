@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fait découvrir les beans de ce module par Quarkus, qui ne les indexe pas sinon -->
+<beans xmlns="https://jakarta.ee/xml/ns/jakartaee" bean-discovery-mode="annotated" version="4.0"/>

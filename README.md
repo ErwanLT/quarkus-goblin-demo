@@ -31,7 +31,7 @@ L'application reprend les briques présentées dans la série d'articles *The Fa
 | **Résilience** | SmallRye Fault Tolerance : `@Retry`, `@Fallback`, `@Timeout`, `@CircuitBreaker`, `@RateLimit` |
 | **Observabilité** | Micrometer / Prometheus, OpenTelemetry (traces HTTP, JDBC et métier, logs), logs corrélés aux traces, health checks |
 | **Supervision** | Docker Compose : PostgreSQL, OpenTelemetry Collector, Tempo (traces), Loki (logs), Prometheus (métriques et règles d'alerte), Grafana (2 dashboards) |
-| **Chaos** | Quarkus Goblin 0.3.1, avec ses modules métriques et traces |
+| **Chaos** | Quarkus Goblin 1.0.0, avec ses modules métriques et traces, en scope `provided` : voir [Le gobelin reste à la porte](#le-gobelin-reste-à-la-porte) |
 | **La salle** | L'écran de démo : ce que vivent les clients, en direct (Qute et SSE) |
 | **La main courante** | Le journal des incidents, tenu dans PostgreSQL, et le post-mortem sans blâme de chacun |
 
@@ -99,7 +99,7 @@ remplit la cave (8 ingrédients, 5 recettes, 6 aventuriers). Si PostgreSQL n'est
 | Métriques | http://localhost:8080/q/metrics |
 | Prometheus et ses alertes | http://localhost:9090/alerts |
 | Logs, dans Grafana | **Explore > Loki**, ou les panneaux *Le journal de la taverne* |
-| Logs, dans un fichier | `target/logs/the-falling-whale.log` |
+| Logs, dans un fichier | `taverne/target/logs/the-falling-whale.log` |
 
 Prometheus met une quinzaine de secondes à voir l'application : les dashboards se remplissent ensuite.
 
@@ -122,7 +122,7 @@ docker compose down
 ```
 
 La base, les traces, les logs et les métriques sont en mémoire : tout repart de zéro au prochain démarrage. La
-configuration faite dans la Dev UI, elle, est conservée dans `.goblin-state.json` (voir plus bas).
+configuration faite dans la Dev UI, elle, est conservée dans `taverne/.goblin-state.json` (voir plus bas).
 
 ### Quelques commandes au comptoir
 
@@ -338,7 +338,7 @@ hors de toute requête attaquée par le gobelin ; si la base ne répond plus, il
     gobelin en `DEBUG` ;
   - envoyés en OTLP au collecteur puis à **Loki**, où chaque ligne garde son `trace_id` : depuis une ligne, *Voir la
     trace* ouvre la trace dans Tempo, et depuis une trace, *Logs for this span* ouvre ses logs ;
-  - en dev mode, une copie (niveau `INFO` et plus) dans `target/logs/the-falling-whale.log`, quel que soit le terminal
+  - en dev mode, une copie (niveau `INFO` et plus) dans `taverne/target/logs/the-falling-whale.log`, quel que soit le terminal
     qui a lancé l'application ;
   - dans la console, chaque ligne porte aussi `traceId` et `spanId`.
 - **Dashboards Grafana**, dans le dossier *The Falling Whale* :
@@ -365,7 +365,8 @@ hors de toute requête attaquée par le gobelin ; si la base ne répond plus, il
 ## Le gobelin passe à l'attaque
 
 Au démarrage, le gobelin ajoute déjà 50 à 400 ms de latence sur 25 % des requêtes REST entrantes (voir
-`application.properties`). Tout le reste se pilote dans la **Dev UI > Goblin > Chaos Dashboard**.
+`taverne/src/main/resources/application.properties`). Tout le reste se pilote dans la
+**Dev UI > Goblin > Chaos Dashboard**.
 
 ![Le Chaos Dashboard de Goblin dans la Dev UI](docs/images/01-dev-ui-demarrage.jpg)
 
@@ -402,8 +403,26 @@ stock finissent par arriver au comptoir.
 > annotations ne la voient jamais. Voir la documentation de Goblin sur les
 > [couches de chaos](https://docs.quarkiverse.io/quarkus-goblin/dev/how-it-works.html#chaos-layers).
 
-La configuration faite dans la Dev UI est enregistrée dans `.goblin-state.json` (ignoré par git). Supprimez ce
+La configuration faite dans la Dev UI est enregistrée dans `taverne/.goblin-state.json` (ignoré par git). Supprimez ce
 fichier pour repartir de `application.properties`.
+
+## Le gobelin reste à la porte
+
+Goblin ne doit jamais atteindre la production. Il est déclaré `provided`, comme ses modules métriques et traces : le
+dev mode et les tests l'ont, l'application packagée jamais, et un build de production qui le contiendrait échouerait.
+
+Le code de l'application ne peut donc pas utiliser l'API de Goblin : il compilerait, puis échouerait en production, où
+Goblin n'est pas. Goblin le sait, et refuse de démarrer en dev mode si une classe de `src/main/java` s'en sert. Or la
+salle affiche ce que fait le gobelin, et la main courante note ses méfaits. La démo est donc découpée en trois modules :
+
+| Module | Rôle | Dans l'application packagée |
+|---|---|---|
+| `regard-sur-le-gobelin` | Ce que la taverne voit du gobelin, en interfaces sans Goblin : `RegardSurLeGobelin`, `TemoinDesMefaits` | oui |
+| `gobelin` | Ces interfaces branchées sur l'API de Goblin : le moteur, et un `AssaultObserver` | non, `provided` |
+| `taverne` | L'application ; sans le module `gobelin`, une implémentation par défaut (`GobelinAbsent`) ne voit aucun gobelin | oui |
+
+`./mvnw quarkus:dev` se lance toujours depuis la racine : Maven construit les deux petits modules, puis démarre la
+taverne. Les tests, eux, peuvent utiliser Goblin librement : ils ne sont jamais packagés.
 
 ## Les tests
 
