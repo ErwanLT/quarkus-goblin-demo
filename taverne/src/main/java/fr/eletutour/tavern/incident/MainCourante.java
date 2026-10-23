@@ -30,9 +30,9 @@ import fr.eletutour.tavern.event.CarteServie;
 import fr.eletutour.tavern.event.CommandeAuComptoir;
 import fr.eletutour.tavern.event.Reapprovisionnement;
 import fr.eletutour.tavern.exception.model.Problem;
+import fr.eletutour.tavern.gobelin.EtatDuGobelin;
+import fr.eletutour.tavern.gobelin.RegardSurLeGobelin;
 import fr.eletutour.tavern.service.MerchantService;
-import io.quarkiverse.goblin.AssaultEngine;
-import io.quarkiverse.goblin.MutableAssaultConfig;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
@@ -70,7 +70,7 @@ public class MainCourante {
     CircuitBreakerMaintenance disjoncteurs;
 
     @Inject
-    AssaultEngine gobelin;
+    RegardSurLeGobelin gobelin;
 
     @Inject
     ObjectMapper json;
@@ -324,22 +324,21 @@ public class MainCourante {
      * accepte : de quoi rallumer le même feu, une fois le correctif en place.
      */
     private Fait etatDuGobelin(Instant horodatage) {
-        MutableAssaultConfig config = gobelin.getMutableConfig();
-        if (!gobelin.isActive() || config == null) {
+        Optional<EtatDuGobelin> etat = gobelin.etat();
+        if (etat.isEmpty()) {
             return new Fait(horodatage, TypeDeFait.GOBELIN_ETAT, "endormi", "Le gobelin dormait", null);
         }
-        MutableAssaultConfig vue = config.snapshot();
-        long[] latence = vue.getLatencyRange();
+        EtatDuGobelin vue = etat.get();
         Map<String, Object> armer = new LinkedHashMap<>();
-        armer.put("layers", vue.getLayers().stream().map(Enum::name).sorted().toList());
-        armer.put("latencyEnabled", vue.isLatencyEnabled());
-        armer.put("latency", Map.of("minMilliseconds", latence[0], "maxMilliseconds", latence[1]));
-        armer.put("exceptionEnabled", vue.isExceptionEnabled());
-        armer.put("httpStatusEnabled", vue.isHttpStatusEnabled());
-        armer.put("httpStatus", Map.of("code", vue.getHttpStatusCode()));
-        armer.put("clientLatencyEnabled", vue.isClientLatencyEnabled());
-        armer.put("clientExceptionEnabled", vue.isClientExceptionEnabled());
-        armer.put("level", vue.getTargetLevel());
+        armer.put("layers", vue.couches());
+        armer.put("latencyEnabled", vue.latence());
+        armer.put("latency", Map.of("minMilliseconds", vue.latenceMinMs(), "maxMilliseconds", vue.latenceMaxMs()));
+        armer.put("exceptionEnabled", vue.exceptions());
+        armer.put("httpStatusEnabled", vue.statutHttp());
+        armer.put("httpStatus", Map.of("code", vue.codeHttp()));
+        armer.put("clientLatencyEnabled", vue.coursiersRalentis());
+        armer.put("clientExceptionEnabled", vue.coursiersPerdus());
+        armer.put("level", vue.niveau());
         try {
             return new Fait(horodatage, TypeDeFait.GOBELIN_ETAT, "eveille", json.writeValueAsString(armer), null);
         } catch (JsonProcessingException e) {

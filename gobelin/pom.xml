@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>fr.eletutour</groupId>
+        <artifactId>quarkus-goblin-demo-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>gobelin</artifactId>
+    <name>The Falling Whale - Quarkus Goblin demo - Gobelin</name>
+    <description>Le regard de la taverne branché sur l'API de Goblin, déclaré provided par l'application</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>fr.eletutour</groupId>
+            <artifactId>regard-sur-le-gobelin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.goblin</groupId>
+            <artifactId>quarkus-goblin</artifactId>
+        </dependency>
+    </dependencies>
+</project>

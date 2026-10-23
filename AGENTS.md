@@ -31,7 +31,7 @@ docker compose up -d          # PostgreSQL et la stack d'observabilité
 ```
 
 Le trafic d'une soirée ordinaire : `./scripts/trafic.sh 120 5` (120 s, ~5 requêtes par seconde). Les logs de
-l'application sont copiés dans `target/logs/the-falling-whale.log`.
+l'application sont copiés dans `taverne/target/logs/the-falling-whale.log`.
 
 ## Piloter le gobelin
 
@@ -89,7 +89,7 @@ Par ordre de fiabilité :
 1. **Les réponses HTTP** que tu reçois (`sonde`). Les erreurs suivent la RFC 9457 (`application/problem+json`), avec
    `type`, `title`, `status`, `detail`, un `traceId`, et `faultTolerance` quand une annotation de résilience a tranché.
 2. **L'historique du gobelin** : ce qu'il a réellement injecté, où, et combien de temps.
-3. **Les logs** : `target/logs/the-falling-whale.log`, ou Loki dans Grafana (http://localhost:3000). Chaque ligne porte
+3. **Les logs** : `taverne/target/logs/the-falling-whale.log`, ou Loki dans Grafana (http://localhost:3000). Chaque ligne porte
    un `traceId`.
 4. **Les métriques** : http://localhost:8080/q/metrics, échantillonnées par Prometheus toutes les 5 s environ, donc en
    décalé.
@@ -117,7 +117,7 @@ curl -s localhost:8080/aventuriers/2                     # sa bourse, avant et a
 curl -s -X POST localhost:8080/cave/stocks/1/reapprovisionnement -H 'Content-Type: application/json' -d '{"quantity":5}'
 ```
 
-Tu peux aussi lire le code (`src/main/java`) pour concevoir tes attaques : les annotations `@Timeout`, `@Retry`,
+Tu peux aussi lire le code (`taverne/src/main/java`) pour concevoir tes attaques : les annotations `@Timeout`, `@Retry`,
 `@CircuitBreaker`, `@Fallback` et `@RateLimit` disent où la taverne croit être protégée.
 
 ## La boucle

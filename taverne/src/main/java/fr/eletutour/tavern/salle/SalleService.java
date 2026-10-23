@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,12 +26,12 @@ import fr.eletutour.tavern.event.CarteServie;
 import fr.eletutour.tavern.event.CommandeAuComptoir;
 import fr.eletutour.tavern.event.Reapprovisionnement;
 import fr.eletutour.tavern.exception.model.Problem;
+import fr.eletutour.tavern.gobelin.EtatDuGobelin;
+import fr.eletutour.tavern.gobelin.RegardSurLeGobelin;
 import fr.eletutour.tavern.incident.MainCourante;
 import fr.eletutour.tavern.service.AdventurerService;
 import fr.eletutour.tavern.service.GrimoireService;
 import fr.eletutour.tavern.service.MerchantService;
-import io.quarkiverse.goblin.AssaultEngine;
-import io.quarkiverse.goblin.MutableAssaultConfig;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.faulttolerance.api.CircuitBreakerMaintenance;
 import io.smallrye.faulttolerance.api.CircuitBreakerState;
@@ -51,7 +52,7 @@ public class SalleService {
     private static final Duration ETAT_PERIODE = Duration.ofSeconds(2);
 
     @Inject
-    AssaultEngine gobelin;
+    RegardSurLeGobelin gobelin;
 
     @Inject
     CircuitBreakerMaintenance disjoncteurs;
@@ -203,42 +204,40 @@ public class SalleService {
      */
     private Map<String, Object> etatDuGobelin() {
         Map<String, Object> data = new LinkedHashMap<>();
-        MutableAssaultConfig config = gobelin.getMutableConfig();
-        boolean actif = gobelin.isActive() && config != null;
-        data.put("actif", actif);
-        if (!actif) {
+        Optional<EtatDuGobelin> etat = gobelin.etat();
+        data.put("actif", etat.isPresent());
+        if (etat.isEmpty()) {
             return data;
         }
-        MutableAssaultConfig vue = config.snapshot();
-        data.put("niveau", vue.getTargetLevel());
+        EtatDuGobelin vue = etat.get();
+        data.put("niveau", vue.niveau());
         List<String> assauts = new ArrayList<>();
-        long[] latence = vue.getLatencyRange();
-        if (vue.isLatencyEnabled()) {
-            assauts.add("latence " + latence[0] + "-" + latence[1] + " ms");
+        if (vue.latence()) {
+            assauts.add("latence " + vue.latenceMinMs() + "-" + vue.latenceMaxMs() + " ms");
         }
-        if (vue.isExceptionEnabled()) {
+        if (vue.exceptions()) {
             assauts.add("exceptions");
         }
-        if (vue.isHttpStatusEnabled()) {
-            assauts.add("statut HTTP " + vue.getHttpStatusCode());
+        if (vue.statutHttp()) {
+            assauts.add("statut HTTP " + vue.codeHttp());
         }
-        if (vue.isDependencyDegradationEnabled()) {
+        if (vue.dependanceDegradee()) {
             assauts.add("dépendance dégradée");
         }
-        if (vue.isResponseBodyEnabled()) {
+        if (vue.corpsAbime()) {
             assauts.add("corps de réponse abîmé");
         }
-        if (vue.isResponseHeaderEnabled()) {
+        if (vue.enTetesModifies()) {
             assauts.add("en-têtes modifiés");
         }
-        if (vue.isClientLatencyEnabled()) {
+        if (vue.coursiersRalentis()) {
             assauts.add("coursiers ralentis");
         }
-        if (vue.isClientExceptionEnabled()) {
+        if (vue.coursiersPerdus()) {
             assauts.add("coursiers perdus");
         }
         data.put("assauts", assauts);
-        data.put("total", gobelin.getTotalAssaultCount());
+        data.put("total", vue.totalAssauts());
         return data;
     }
 
